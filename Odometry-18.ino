@@ -118,6 +118,10 @@ void arc_distance(int radius, int angle){
   
 }
 
+void turn_static(int angle){
+  
+}
+
 
 
 // ************ MD25 INTERFACE FUNCTIONS ************
@@ -175,6 +179,7 @@ long read_encoder(unsigned int reg){
 void serial_debug(){
 /* This function is designed to accept strings over serial and interpret them as basic instructions for debugging.
  *  m = move straight (distance)
+ *  t = turn an angle whilst stopped (angle)
  *  a = arc (radius, angle)
  *  r = print encoder values to serial
  *  example: "a 150 90" Will call the arc_distance function with a radius of 150mm to turn through a 90 degree arc.
@@ -187,6 +192,12 @@ void serial_debug(){
     int d = code[2] - 0;  //Convert char to int
     move_distance(d);     //Call move function
   }
+
+  if(code[0] == 't'){     //If a move command
+    int a = code[2] - 0;  //Convert char to int
+    turn_static(a);       //Call move function
+  }
+
 
   if(code[0] == 'a'){     //If an arc command
     int r = code[2] - 0;  //Convert char to int

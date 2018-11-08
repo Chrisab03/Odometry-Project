@@ -27,12 +27,14 @@ int pos = 0;
 
 
 //Assign variables for MD25 use
-int spd = 0;          //Speed
-int turn = 0;         //Turning value as difference in speeds
-int mode_val = 3;     //MD25 mode value
-float Dist_1 = 0.0;   //Encoder 1 distance
-float Dist_2 = 0.0;   //Encoder 2 distance
-int a_rate = 5;      //Acceleration co-efficient (values of 1 to 10, https://www.robot-electronics.co.uk/htm/md25i2c.htm)
+int spd = 0;                          //Speed
+int turn = 0;                         //Turning value as difference in speeds
+int mode_val = 3;                     //MD25 mode value
+float Dist_1 = 0.0;                   //Encoder 1 distance
+float Dist_2 = 0.0;                   //Encoder 2 distance
+int a_rate = 5;                       //Acceleration co-efficient (values of 1 to 10, https://www.robot-electronics.co.uk/htm/md25i2c.htm)
+int radius = 55;                      //Wheel radius
+float r_coeff = radius * 0.017453;    //Coefficient of rotation = wheel radius * (2 pi / 360)
 
 
 //Assign variable to pins for easy pin changes.
@@ -150,7 +152,7 @@ void set_turn(int t){
 
 long read_encoder(unsigned int reg){
   /* This function reads the 4 byte encoder value from the MD25.
-   * The address of the encoder to be read (Hexadecimal) is taken as an argument.
+   * The address of the encoder to be read (Hexadecimal) is taken as the argument reg.
    * The function returns the distance as a long number in mm.
    * Author: Samuel Beardmore Alonso
    * Bit Shifting method taken from https://github.com/riccardofelluga/MD25-I2C-Arduino-Library/blob/master/MD25.h
@@ -162,14 +164,16 @@ long read_encoder(unsigned int reg){
 
   Wire.requestFrom(MD25, 4);  
   while(Wire.available() < 4);  
-  long val = Wire.read();
-  val <<= 8;
-  val += Wire.read();
-  val <<= 8;
-  val += Wire.read();
-  val <<= 8;
-  val  +=Wire.read();
-  return(val);
+  long theta = Wire.read();
+  theta <<= 8;
+  theta += Wire.read();
+  theta <<= 8;
+  theta += Wire.read();
+  theta <<= 8;
+  theta  +=Wire.read();
+
+  long dist = theta * r_coeff;
+  return(dist);
 }
 
 

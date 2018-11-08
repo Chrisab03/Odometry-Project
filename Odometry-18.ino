@@ -34,6 +34,8 @@ float Dist_1 = 0.0;                   //Encoder 1 distance
 float Dist_2 = 0.0;                   //Encoder 2 distance
 int a_rate = 5;                       //Acceleration co-efficient (values of 1 to 10, https://www.robot-electronics.co.uk/htm/md25i2c.htm)
 int radius = 55;                      //Wheel radius
+const int wid = 100;                  // Width between wheels (mm)
+const float pi = 3.1416;              // pi
 float r_coeff = radius * 0.017453;    //Coefficient of rotation = wheel radius * (2 pi / 360)
 
 
@@ -111,19 +113,84 @@ void dispense(){
 
 // ************ MOVEMENT FUNCTIONS ************
 
+void run_course(){
+  move_distance (340);                                        //13 to 1
+  turn_static (90);
+  move_distance (260);                                        //1 to 2
+  turn_static (-37.4);
+  move_distance (362);                                        //2 to 11
+  turn_static (142.6);
+  arc_distance (270, 180);                                    //11 to 10 arc
+  turn_static (-90);
+  move_distance (180);                                        //10 to 9
+  turn_static (140);
+  move_distance (622);                                        //9 to 8
+  turn_static (40);
+  for (int i = 0; i <= 2; i++){                               //Square part for 8 to 5, 5 to 6, 6 to 7
+  move_distance (400);
+  turn_static (90);  
+  }
+  move_distance (400);                                        //7 to 8
+  move_distance (260);                                        //8 to 4 
+  turn_static (-90);
+  arc_distance (90, 260);                                     //4 to 3 arc
+  turn_static (90);
+  move_distance (500);                                        //3 to 2
+  turn_static (37.4);
+  move_distance(428);                                         //2 to 13
+  delay(42069420694206942069);  
+}
+
+
 void move_distance(int dist){
-  
+  reset_encoders;                                                    // Sets encoder values to 0
+  while(read_encoder(E_1) < dist* (2/3)) {                           // Sets the speed for the first 2/3 of the distance
+  set_speed(30);
+  }
+  while(read_encoder(E_1) < dist){                                   // Reduces the speed for the last 1/3
+    set_speed(5);
+  }
+  set_stop;                                                          // Stops
 }
 
 
-void arc_distance(int radius, int angle){
-  
+void arc_distance(int radius, int angle){                            // Moves the robot along an arc
+  reset_encoders;                                                    // Sets encoder values to 0
+  int s = 20;                                                        // Sets speed to 20
+  int turn = round(s * ( wid / (2 * radius)));                       // Works out the turn speed difference needed for the arc
+  float out = pi * (2 * radius + wid) * (angle/ 360);                // Works out the distance the outer wheel will travel
+  float in = pi * (2 * radius - wid) * (angle/ 360);                 // Works out the distance the inner wheel will travel
+  while (read_encoder(E_1) < in * 2/3){                              // Travels at Speed s for first 2/3 of way;
+    set_speed(s);
+    set_turn(turn); 
+  }
+  s = 5;                                                             // Reduces the speed value
+  turn = round(s * ( wid / (2 * radius)));                           // Adjusts the turning speed
+  while (read_encoder(E_1) < in){                                    // Travels at a reduced speed till the end
+    set_speed(s);
+    set_turn(turn); 
+  }
+  set_stop;                                                          // Stops
 }
 
-void turn_static(int angle){
-  
+void turn_static(float angle){                                       // Rotates the robot on a stationary point
+  int s = 15;                                                        // Sets speed to 15
+  reset_encoders;                                                    // Resets encoder values
+  float distance = (abs(angle) / 360) * wid * pi;                    // finds the distance the wheels will travel
+  if (angle < 0) do s = s * -1;                                      // If angle is negative, it takes it as anticlockwise and reverses the speed
+  while (read_encoder(E_1) < (distance * 3/4));{                     // Sets the speed for the first 3/4 of the turn
+    set_turn(s);
+  }
+  while (read_encoder(E_1) < distance) {                             // Reduces the speed for the last 1/4 of the turn
+    set_turn(round(s/3));
+  }
+  set_stop;                                                          // Stops
 }
 
+void set_stop(){
+  set_speed(0);
+  set_turn(0);
+}
 
 
 // ************ MD25 INTERFACE FUNCTIONS ************
@@ -176,7 +243,12 @@ long read_encoder(unsigned int reg){
   return(dist);
 }
 
-
+void reset_encoders(){
+  Wire.beginTransmission(MD25);                              // Comunicate with MD25
+  Wire.write(CMD);                                           // Write to command register
+  Wire.write(0x20);                                          // Reset encoder values
+  Wire.endTransmission();
+}
 
 // ************ DEBUG FUNCTIONS ************
 
